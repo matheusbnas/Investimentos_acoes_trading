@@ -1,37 +1,46 @@
-export default function TradingFAQ() {
+const TradingFAQ = ({ darkMode }) => {
   return (
-    <div className="bg-white rounded-lg shadow p-6 mt-8">
+    <div className={`mt-8 p-6 rounded-lg shadow transition-colors duration-300 ${
+      darkMode ? 'bg-gray-800 text-gray-200' : 'bg-white text-gray-800'
+    }`}>
       <h2 className="text-xl font-semibold mb-4">FAQ - Análise Técnica</h2>
-      
       <div className="space-y-4">
         <div>
-          <h3 className="font-medium">RSI (Índice de Força Relativa)</h3>
-          <p className="text-gray-600 text-sm">
+          <h3 className="font-semibold">RSI (Índice de Força Relativa)</h3>
+          <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
             Mede a velocidade e mudança de movimentos de preços. Varia entre 0-100.
-            <br />• Acima de 70: Sobrecompra
-            <br />• Abaixo de 30: Sobrevenda
           </p>
+          <ul className={`list-disc list-inside text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+            <li>Acima de 70: Sobrecompra</li>
+            <li>Abaixo de 30: Sobrevenda</li>
+          </ul>
         </div>
-
         <div>
-          <h3 className="font-medium">Médias Móveis (MA)</h3>
-          <p className="text-gray-600 text-sm">
+          <h3 className="font-semibold">Médias Móveis (MA)</h3>
+          <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
             Média de preços em um período específico:
-            <br />• MA20: Média de 20 períodos (curto prazo)
-            <br />• MA50: Média de 50 períodos (médio prazo)
-            <br />Quando a MA20 cruza acima da MA50: sinal de compra
+          </p>
+          <ul className={`list-disc list-inside text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+            <li>MA20: Média de 20 períodos (curto prazo)</li>
+            <li>MA50: Média de 50 períodos (médio prazo)</li>
+          </ul>
+          <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+            Quando a MA20 cruza acima da MA50: sinal de compra
           </p>
         </div>
-
         <div>
-          <h3 className="font-medium">Estratégia Usada</h3>
-          <p className="text-gray-600 text-sm">
+          <h3 className="font-semibold">Estratégia Usada</h3>
+          <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
             Combina RSI e cruzamento de médias:
-            <br />• Compra: MA20 {'>'} MA50 E RSI {'<'} 70
-            <br />• Venda: MA20 {'<'} MA50 E RSI {'>'} 30
           </p>
+          <ul className={`list-disc list-inside text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+            <li>Compra: MA20 &gt; MA50 E RSI &lt; 70</li>
+            <li>Venda: MA20 &lt; MA50 E RSI &gt; 30</li>
+          </ul>
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default TradingFAQ;

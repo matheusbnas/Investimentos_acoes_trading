@@ -212,7 +212,7 @@ function App() {
   };
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-gray-900 text-gray-100' : 'bg-gray-50'}`}>
+    <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-gray-900 text-gray-200' : 'bg-gray-50 text-gray-800'}`}>
       <nav className={`border-b transition-colors duration-300 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
@@ -318,14 +318,12 @@ function App() {
             }`}>
               <h2 className="text-xl font-semibold mb-4">Dados: {symbol}</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div className={`p-4 rounded-lg ${
-                  darkMode ? 'bg-gray-700' : 'bg-gray-50'
+              <div className={`p-4 rounded-lg ${
+                darkMode ? 'bg-gray-800 text-gray-200' : 'bg-gray-50 text-gray-800'
                 }`}>
-                  <p className="text-sm text-gray-500">Preço</p>
-                  <p className="text-2xl font-bold">
-                    ${stockData.price.toFixed(2)}
-                  </p>
-                </div>
+                  <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>Preço</p>
+                  <p className="text-2xl font-bold">${stockData.price.toFixed(2)}</p>
+              </div>
                 <div className={`p-4 rounded-lg ${
                   darkMode ? 'bg-gray-700' : 'bg-gray-50'
                 }`}>
