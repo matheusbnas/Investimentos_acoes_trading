@@ -1,0 +1,6 @@
+requests
+pandas
+numpy
+time
+flask
+flask_cors
