@@ -474,16 +474,10 @@ function App() {
           </div>
         </div>
 
-        <Chatbot
-          indicators={indicators}
-          darkMode={darkMode}
-        />
-
+        {/* Componentes Inferiores */}
+        <Chatbot indicators={indicators} darkMode={darkMode} />
         <TradingFAQ darkMode={darkMode} />
-        <AIInsights
-          indicators={indicators || { ma20: 0, ma50: 0, ma100: 0, rsi: 50 }}
-          darkMode={darkMode}
-        />
+        <AIInsights indicators={indicators} darkMode={darkMode} />
       </main>
     </div>
   );
