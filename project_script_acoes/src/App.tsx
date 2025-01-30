@@ -1,38 +1,3 @@
-1
-
-
-App
-tsx
-MB
-Adicionar mais ações no dicionário e melhorar o front-end para opção de tela preto e branco.
-Ter opção de limpar o histórico separado por ação ou por completo e um faq explicando o funcionamento do site. Configurações e alerta de ações em tempo real para realizar a compra e venda de acordo com as técnicas de ações empregadas.
-MOSTRE O CÓDIGO COMPLETO!
-
-
-I'll help you enhance the trading dashboard with those features. Here's a complete updated version:
-
-
-Enhanced Trading Dashboard
-Click to open code
- Copy
-Retry
-
-
-
-Claude can make mistakes. Please double-check responses.
-
-
-
-Nenhum arquivo escolhido
-
-
-3.5 Sonnet
-
-Choose style
-2
-
-Enhanced Trading Dashboard
-
 import React, { useState, useEffect } from 'react';
 import {
   LineChart,
