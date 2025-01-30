@@ -8,7 +8,7 @@ import {
   Settings,
   Bell,
   Search,
-  ChevronDown,
+  X,
 } from 'lucide-react';
 
 const STOCKS = {
@@ -110,6 +110,8 @@ function App() {
   const [autoTrading, setAutoTrading] = useState(false);
   const [pythonStatus, setPythonStatus] = useState('');
   const [historicalData, setHistoricalData] = useState<Array<{ timestamp: number; close: number }>>([]);
+  const [darkMode, setDarkMode] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     fetchStockData();
@@ -201,18 +203,57 @@ function App() {
     controlPythonTrading(newState);
   };
 
+  const clearHistory = (index?: number) => {
+    if (typeof index === 'number') {
+      setPortfolio(prev => prev.filter((_, i) => i !== index));
+    } else {
+      setPortfolio([]);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b border-gray-200">
+    <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-gray-900 text-gray-100' : 'bg-gray-50'}`}>
+      <nav className={`border-b transition-colors duration-300 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             <div className="flex items-center">
-              <LineChart className="h-8 w-8 text-indigo-600" />
+              <LineChart className={`h-8 w-8 ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`} />
               <span className="ml-2 text-xl font-bold">TradingDash</span>
             </div>
-            <div className="flex items-center space-x-4">
-              <Bell className="h-5 w-5 text-gray-600" />
-              <Settings className="h-5 w-5 text-gray-600" />
+            <div className="flex items-center space-x-4 relative">
+              <Bell className={`h-5 w-5 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+              <Settings 
+                className={`h-5 w-5 cursor-pointer ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}
+                onClick={() => setShowSettings(!showSettings)} 
+              />
+              
+              {showSettings && (
+                <div className={`absolute top-12 right-0 w-64 p-4 rounded-lg shadow-xl z-50 ${
+                  darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
+                }`}>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <span>Tema Escuro</span>
+                      <button
+                        onClick={() => setDarkMode(!darkMode)}
+                        className={`w-12 h-6 rounded-full px-1 flex items-center ${
+                          darkMode ? 'bg-indigo-600' : 'bg-gray-300'
+                        }`}
+                      >
+                        <div className={`w-4 h-4 rounded-full bg-white transform transition-transform ${
+                          darkMode ? 'translate-x-6' : 'translate-x-0'
+                        }`} />
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => clearHistory()}
+                      className={`text-left ${darkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-500'}`}
+                    >
+                      Limpar Todo o Histórico
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -224,7 +265,11 @@ function App() {
             <select
               value={symbol}
               onChange={(e) => setSymbol(e.target.value)}
-              className="flex-1 p-2 border rounded-md focus:ring-2 focus:ring-indigo-500"
+              className={`flex-1 p-2 rounded-md focus:ring-2 ${
+                darkMode 
+                  ? 'bg-gray-800 border-gray-700 text-white focus:ring-indigo-400' 
+                  : 'border-gray-300 focus:ring-indigo-500'
+              }`}
             >
               {Object.entries(STOCKS).map(([category, stocks]) => (
                 <optgroup label={category} key={category}>
@@ -238,7 +283,11 @@ function App() {
             </select>
             <button
               onClick={fetchStockData}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center"
+              className={`px-4 py-2 rounded-md flex items-center ${
+                darkMode 
+                  ? 'bg-indigo-600 hover:bg-indigo-700 text-white' 
+                  : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+              }`}
             >
               <Search className="h-5 w-5 mr-2" />
               Buscar
@@ -246,28 +295,40 @@ function App() {
             <div className="flex flex-col">
               <button
                 onClick={toggleAutoTrading}
-                className={`px-4 py-2 ${autoTrading ? 'bg-green-600' : 'bg-gray-600'} text-white rounded-md hover:opacity-90`}
+                className={`px-4 py-2 rounded-md hover:opacity-90 ${
+                  autoTrading 
+                    ? 'bg-green-600 text-white' 
+                    : darkMode 
+                      ? 'bg-gray-700 text-white' 
+                      : 'bg-gray-600 text-white'
+                }`}
               >
                 {autoTrading ? 'Auto ON' : 'Auto OFF'}
               </button>
-              <span className="text-xs text-gray-600">{pythonStatus}</span>
+              <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{pythonStatus}</span>
             </div>
           </div>
 
-          {loading && <p className="text-gray-600">Carregando...</p>}
+          {loading && <p className={`${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Carregando...</p>}
           {error && <p className="text-red-600">{error}</p>}
 
           {stockData && (
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className={`rounded-lg shadow p-6 transition-colors duration-300 ${
+              darkMode ? 'bg-gray-800' : 'bg-white'
+            }`}>
               <h2 className="text-xl font-semibold mb-4">Dados: {symbol}</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div className="p-4 bg-gray-50 rounded-lg">
+                <div className={`p-4 rounded-lg ${
+                  darkMode ? 'bg-gray-700' : 'bg-gray-50'
+                }`}>
                   <p className="text-sm text-gray-500">Preço</p>
                   <p className="text-2xl font-bold">
                     ${stockData.price.toFixed(2)}
                   </p>
                 </div>
-                <div className="p-4 bg-gray-50 rounded-lg">
+                <div className={`p-4 rounded-lg ${
+                  darkMode ? 'bg-gray-700' : 'bg-gray-50'
+                }`}>
                   <p className="text-sm text-gray-500">Variação</p>
                   <p className={`text-2xl font-bold ${
                     stockData.change >= 0 
@@ -277,7 +338,9 @@ function App() {
                     {stockData.change.toFixed(2)}
                   </p>
                 </div>
-                <div className="p-4 bg-gray-50 rounded-lg">
+                <div className={`p-4 rounded-lg ${
+                  darkMode ? 'bg-gray-700' : 'bg-gray-50'
+                }`}>
                   <p className="text-sm text-gray-500">Volume</p>
                   <p className="text-2xl font-bold">
                     {stockData.volume.toLocaleString()}
@@ -287,15 +350,21 @@ function App() {
 
               {indicators && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  <div className="p-4 bg-gray-50 rounded-lg">
+                  <div className={`p-4 rounded-lg ${
+                    darkMode ? 'bg-gray-700' : 'bg-gray-50'
+                  }`}>
                     <p className="text-sm text-gray-500">RSI (14)</p>
                     <p className="text-xl font-bold">{indicators.rsi.toFixed(2)}</p>
                   </div>
-                  <div className="p-4 bg-gray-50 rounded-lg">
+                  <div className={`p-4 rounded-lg ${
+                    darkMode ? 'bg-gray-700' : 'bg-gray-50'
+                  }`}>
                     <p className="text-sm text-gray-500">MA20</p>
                     <p className="text-xl font-bold">${indicators.ma20.toFixed(2)}</p>
                   </div>
-                  <div className="p-4 bg-gray-50 rounded-lg">
+                  <div className={`p-4 rounded-lg ${
+                    darkMode ? 'bg-gray-700' : 'bg-gray-50'
+                  }`}>
                     <p className="text-sm text-gray-500">Sinal</p>
                     <p className={`text-xl font-bold ${
                       indicators.ma20 > indicators.ma50 && indicators.rsi < 70 
@@ -315,15 +384,18 @@ function App() {
               )}
 
               {historicalData.length > 0 && (
-                <div className="bg-white rounded-lg shadow p-6 mt-4">
+                <div className={`rounded-lg shadow p-6 mt-4 ${
+                  darkMode ? 'bg-gray-700' : 'bg-white'
+                }`}>
                   <h2 className="text-xl font-semibold mb-4">Gráfico de 15 Minutos (5 dias)</h2>
                   <StockChart 
-                  data={historicalData}
-                  indicators={indicators || { ma20: 0, ma50: 0, rsi: 50 }} // Fornece fallback
-                  showMA20={true}
-                  showMA50={true}
-                  showRSI={true}
-                />
+                    data={historicalData}
+                    indicators={indicators || { ma20: 0, ma50: 0, rsi: 50 }}
+                    showMA20={true}
+                    showMA50={true}
+                    showRSI={true}
+                    darkMode={darkMode}
+                  />
                 </div>
               )}
 
@@ -333,7 +405,11 @@ function App() {
                   min="1"
                   value={quantity}
                   onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="w-32 p-2 border rounded-md"
+                  className={`w-32 p-2 border rounded-md ${
+                    darkMode 
+                      ? 'bg-gray-800 border-gray-700 text-white' 
+                      : 'border-gray-300'
+                  }`}
                   placeholder="Quantidade"
                 />
                 <button
@@ -355,21 +431,29 @@ function App() {
           )}
         </div>
 
-        <div className="bg-white rounded-lg shadow">
-          <div className="p-4 border-b">
+        <div className={`rounded-lg shadow transition-colors duration-300 ${
+          darkMode ? 'bg-gray-800' : 'bg-white'
+        }`}>
+          <div className={`p-4 border-b ${
+            darkMode ? 'border-gray-700' : 'border-gray-200'
+          }`}>
             <h2 className="text-lg font-semibold">Histórico</h2>
           </div>
           <div className="divide-y">
             {portfolio.map((trade, index) => (
-              <div key={index} className="p-4 flex justify-between items-center">
+              <div key={index} className={`p-4 flex justify-between items-center ${
+                darkMode ? 'divide-gray-700' : 'divide-gray-200'
+              }`}>
                 <div className="flex items-center gap-4">
                   <div className={`p-2 rounded-full ${
-                    trade.type === 'buy' ? 'bg-green-100' : 'bg-red-100'
+                    trade.type === 'buy' 
+                      ? 'bg-green-100 text-green-600' 
+                      : 'bg-red-100 text-red-600'
                   }`}>
                     {trade.type === 'buy' ? (
-                      <ArrowUpRight className="h-5 w-5 text-green-600" />
+                      <ArrowUpRight className="h-5 w-5" />
                     ) : (
-                      <ArrowDownRight className="h-5 w-5 text-red-600" />
+                      <ArrowDownRight className="h-5 w-5" />
                     )}
                   </div>
                   <div>
@@ -379,26 +463,38 @@ function App() {
                     </p>
                   </div>
                 </div>
-                <div>
-                  <p className="font-medium">${trade.total.toFixed(2)}</p>
-                  <p className="text-sm text-gray-500">
-                    ${trade.price.toFixed(2)}
-                  </p>
+                <div className="flex items-center gap-4">
+                  <div>
+                    <p className="font-medium">${trade.total.toFixed(2)}</p>
+                    <p className="text-sm text-gray-500">
+                      ${trade.price.toFixed(2)}
+                    </p>
+                  </div>
+                  <button 
+                    onClick={() => clearHistory(index)}
+                    className={`p-1 hover:opacity-70 ${
+                      darkMode ? 'text-gray-400' : 'text-gray-600'
+                    }`}
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
                 </div>
               </div>
             ))}
             {portfolio.length === 0 && (
-              <div className="p-4 text-center text-gray-500">
+              <div className={`p-4 text-center ${
+                darkMode ? 'text-gray-400' : 'text-gray-500'
+              }`}>
                 Nenhuma operação realizada
               </div>
             )}
           </div>
         </div>
 
-        <TradingFAQ />
+        <TradingFAQ darkMode={darkMode} />
       </main>
     </div>
   );
 }
 
-export default App;
+export default App;          

@@ -10,11 +10,11 @@ import {
   ResponsiveContainer
 } from 'recharts';
 
-const StockChart = ({ data, indicators, showMA20, showMA50, showRSI }) => {
+const StockChart = ({ data, indicators, showMA20, showMA50, showRSI, darkMode }) => {
   if (!data || data.length === 0 || !indicators) return null;
 
-  const chartData = data.map((item, index) => ({
-    name: new Date(item.timestamp).toLocaleTimeString(), // Remove *1000
+  const chartData = data.map((item) => ({
+    name: new Date(item.timestamp).toLocaleTimeString(),
     price: item.close,
     ma20: indicators.ma20,
     ma50: indicators.ma50,
@@ -22,15 +22,36 @@ const StockChart = ({ data, indicators, showMA20, showMA50, showRSI }) => {
   }));
 
   return (
-    <div className="w-full h-96 bg-white p-4 rounded-lg shadow">
+    <div className={`w-full h-96 p-4 rounded-lg shadow transition-colors duration-300 ${
+      darkMode ? 'bg-gray-700' : 'bg-white'
+    }`}>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="name" />
-          <YAxis yAxisId="left" />
-          <YAxis yAxisId="right" orientation="right" domain={[0, 100]} />
-          <Tooltip />
-          <Legend />
+          <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#4A5568' : '#E2E8F0'} />
+          <XAxis 
+            dataKey="name" 
+            stroke={darkMode ? '#CBD5E0' : '#718096'} 
+          />
+          <YAxis 
+            yAxisId="left" 
+            stroke={darkMode ? '#CBD5E0' : '#718096'}
+          />
+          <YAxis 
+            yAxisId="right" 
+            orientation="right" 
+            domain={[0, 100]} 
+            stroke={darkMode ? '#CBD5E0' : '#718096'}
+          />
+          <Tooltip
+            contentStyle={{
+              backgroundColor: darkMode ? '#2D3748' : '#FFFFFF',
+              borderColor: darkMode ? '#4A5568' : '#E2E8F0'
+            }}
+            itemStyle={{ color: darkMode ? '#CBD5E0' : '#1A202C' }}
+          />
+          <Legend 
+            wrapperStyle={{ color: darkMode ? '#CBD5E0' : '#1A202C' }}
+          />
           <Line 
             type="monotone" 
             dataKey="price" 
