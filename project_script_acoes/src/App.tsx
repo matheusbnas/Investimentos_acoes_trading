@@ -1,3 +1,5 @@
+import StockChart from './StockChart';
+import TradingFAQ from './TradingFAQ';
 import React, { useState, useEffect } from 'react';
 import {
   LineChart,
@@ -6,21 +8,9 @@ import {
   Settings,
   Bell,
   Search,
-  Trash2,
-  HelpCircle,
-  AlertCircle,
+  ChevronDown,
 } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 
-// Expanded stocks dictionary
 const STOCKS = {
   'Ações dos EUA': {
     'AAPL': 'Apple Inc.',
@@ -74,28 +64,6 @@ const STOCKS = {
   }
 };
 
-interface Trade {
-  symbol: string;
-  quantity: number;
-  price: number;
-  total: number;
-  type: 'buy' | 'sell';
-  date: string;
-}
-
-interface Indicators {
-  rsi: number;
-  ma20: number;
-  ma50: number;
-}
-
-interface AlertRule {
-  symbol: string;
-  condition: 'above' | 'below';
-  price: number;
-  active: boolean;
-}
-
 const calculateRSI = (prices: number[], period: number = 14): number => {
   if (prices.length < period + 1) return 50;
   
@@ -116,8 +84,22 @@ const calculateMA = (prices: number[], period: number): number => {
   return prices.slice(-period).reduce((sum, price) => sum + price, 0) / period;
 };
 
+interface Trade {
+  symbol: string;
+  quantity: number;
+  price: number;
+  total: number;
+  type: 'buy' | 'sell';
+  date: string;
+}
+
+interface Indicators {
+  rsi: number;
+  ma20: number;
+  ma50: number;
+}
+
 function App() {
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [symbol, setSymbol] = useState('AAPL');
   const [stockData, setStockData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -127,8 +109,7 @@ function App() {
   const [indicators, setIndicators] = useState<Indicators | null>(null);
   const [autoTrading, setAutoTrading] = useState(false);
   const [pythonStatus, setPythonStatus] = useState('');
-  const [alerts, setAlerts] = useState<AlertRule[]>([]);
-  const [showFAQ, setShowFAQ] = useState(false);
+  const [historicalData, setHistoricalData] = useState<Array<{ timestamp: number; close: number }>>([]);
 
   useEffect(() => {
     fetchStockData();
@@ -138,36 +119,11 @@ function App() {
     }
   }, [symbol, autoTrading]);
 
-  useEffect(() => {
-    // Check alerts
-    if (stockData && alerts.length > 0) {
-      const currentPrice = parseFloat(stockData['05. price']);
-      alerts.forEach(alert => {
-        if (alert.active && alert.symbol === symbol) {
-          if (
-            (alert.condition === 'above' && currentPrice >= alert.price) ||
-            (alert.condition === 'below' && currentPrice <= alert.price)
-          ) {
-            // Trigger notification
-            new Notification(`Alerta de Preço: ${symbol}`, {
-              body: `O preço atingiu ${currentPrice} (${alert.condition === 'above' ? 'acima' : 'abaixo'} de ${alert.price})`,
-            });
-            // Disable the alert after triggering
-            setAlerts(prev => 
-              prev.map(a => 
-                a === alert ? { ...a, active: false } : a
-              )
-            );
-          }
-        }
-      });
-    }
-  }, [stockData]);
-
   const calculateIndicators = (prices: number[]) => {
     const rsi = calculateRSI(prices);
     const ma20 = calculateMA(prices, 20);
     const ma50 = calculateMA(prices, 50);
+    
     setIndicators({ rsi, ma20, ma50 });
   };
 
@@ -178,19 +134,21 @@ function App() {
         `http://localhost:5000/api/stock?symbol=${symbol}`
       );
       const data = await response.json();
-
+  
       if (data.error) {
         setError(data.error);
         return;
       }
-
-      setStockData({
-        '05. price': data.stockInfo.price,
-        '06. volume': data.stockInfo.volume,
-        '09. change': data.stockInfo.change,
-      });
-
-      calculateIndicators(data.prices);
+  
+      setStockData(data.stockInfo);
+      
+      if (data.prices && data.prices.length > 0) {
+        calculateIndicators(data.prices);
+        setHistoricalData(data.prices.map((price: number, index: number) => ({
+          timestamp: Date.now() - (data.prices.length - index) * 900000,
+          close: price
+        })));
+      }
     } catch (err) {
       setError('Erro ao buscar dados.');
       console.error('Detalhes do erro:', err);
@@ -225,7 +183,7 @@ function App() {
   
   const executeTrade = (type: 'buy' | 'sell') => {
     if (!stockData) return;
-    const price = parseFloat(stockData['05. price']);
+    const price = stockData.price;
     
     setPortfolio([...portfolio, {
       symbol,
@@ -243,26 +201,9 @@ function App() {
     controlPythonTrading(newState);
   };
 
-  const clearHistory = (specificSymbol?: string) => {
-    if (specificSymbol) {
-      setPortfolio(portfolio.filter(trade => trade.symbol !== specificSymbol));
-    } else {
-      setPortfolio([]);
-    }
-  };
-
-  const addAlert = (price: number, condition: 'above' | 'below') => {
-    setAlerts([...alerts, {
-      symbol,
-      condition,
-      price,
-      active: true
-    }]);
-  };
-
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50'}`}>
-      <nav className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b`}>
+    <div className="min-h-screen bg-gray-50">
+      <nav className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             <div className="flex items-center">
@@ -270,48 +211,8 @@ function App() {
               <span className="ml-2 text-xl font-bold">TradingDash</span>
             </div>
             <div className="flex items-center space-x-4">
-              <button 
-                onClick={() => setIsDarkMode(!isDarkMode)}
-                className={`p-2 rounded-lg ${
-                  isDarkMode 
-                    ? 'hover:bg-gray-700 text-gray-300' 
-                    : 'hover:bg-gray-100 text-gray-600'
-                }`}
-              >
-                {isDarkMode ? '🌞' : '🌙'}
-              </button>
-              <Dialog>
-                <DialogTrigger>
-                  <HelpCircle className={`h-5 w-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>FAQ - Como usar o TradingDash</DialogTitle>
-                    <DialogDescription>
-                      <div className="space-y-4 mt-4">
-                        <div>
-                          <h3 className="font-bold">Como funciona o Auto Trading?</h3>
-                          <p>O sistema automaticamente executa operações baseadas em indicadores técnicos (RSI, Médias Móveis) quando ativado.</p>
-                        </div>
-                        <div>
-                          <h3 className="font-bold">Como configurar alertas?</h3>
-                          <p>Você pode definir alertas de preço para qualquer ativo. O sistema notificará quando o preço atingir o valor definido.</p>
-                        </div>
-                        <div>
-                          <h3 className="font-bold">Indicadores Técnicos:</h3>
-                          <ul className="list-disc pl-5">
-                            <li>RSI: Índice de Força Relativa (valores entre 0-100)</li>
-                            <li>MA20: Média Móvel de 20 períodos</li>
-                            <li>MA50: Média Móvel de 50 períodos</li>
-                          </ul>
-                        </div>
-                      </div>
-                    </DialogDescription>
-                  </DialogHeader>
-                </DialogContent>
-              </Dialog>
-              <Bell className={`h-5 w-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
-              <Settings className={`h-5 w-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
+              <Bell className="h-5 w-5 text-gray-600" />
+              <Settings className="h-5 w-5 text-gray-600" />
             </div>
           </div>
         </div>
@@ -323,11 +224,7 @@ function App() {
             <select
               value={symbol}
               onChange={(e) => setSymbol(e.target.value)}
-              className={`flex-1 p-2 border rounded-md ${
-                isDarkMode 
-                  ? 'bg-gray-800 border-gray-700 text-white' 
-                  : 'bg-white border-gray-300'
-              }`}
+              className="flex-1 p-2 border rounded-md focus:ring-2 focus:ring-indigo-500"
             >
               {Object.entries(STOCKS).map(([category, stocks]) => (
                 <optgroup label={category} key={category}>
@@ -367,23 +264,23 @@ function App() {
                 <div className="p-4 bg-gray-50 rounded-lg">
                   <p className="text-sm text-gray-500">Preço</p>
                   <p className="text-2xl font-bold">
-                    ${stockData['05. price'].toFixed(2)}
+                    ${stockData.price.toFixed(2)}
                   </p>
                 </div>
                 <div className="p-4 bg-gray-50 rounded-lg">
                   <p className="text-sm text-gray-500">Variação</p>
                   <p className={`text-2xl font-bold ${
-                    stockData['09. change'] >= 0 
+                    stockData.change >= 0 
                       ? 'text-green-600' 
                       : 'text-red-600'
                   }`}>
-                    {stockData['09. change'].toFixed(2)}
+                    {stockData.change.toFixed(2)}
                   </p>
                 </div>
                 <div className="p-4 bg-gray-50 rounded-lg">
                   <p className="text-sm text-gray-500">Volume</p>
                   <p className="text-2xl font-bold">
-                    {stockData['06. volume'].toLocaleString()}
+                    {stockData.volume.toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -417,7 +314,20 @@ function App() {
                 </div>
               )}
 
-              <div className="flex gap-4 items-center">
+              {historicalData.length > 0 && (
+                <div className="bg-white rounded-lg shadow p-6 mt-4">
+                  <h2 className="text-xl font-semibold mb-4">Gráfico de 15 Minutos (5 dias)</h2>
+                  <StockChart 
+                  data={historicalData}
+                  indicators={indicators || { ma20: 0, ma50: 0, rsi: 50 }} // Fornece fallback
+                  showMA20={true}
+                  showMA50={true}
+                  showRSI={true}
+                />
+                </div>
+              )}
+
+              <div className="flex gap-4 items-center mt-6">
                 <input
                   type="number"
                   min="1"
@@ -484,6 +394,8 @@ function App() {
             )}
           </div>
         </div>
+
+        <TradingFAQ />
       </main>
     </div>
   );
