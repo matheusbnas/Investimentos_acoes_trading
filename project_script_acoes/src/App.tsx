@@ -1,3 +1,38 @@
+1
+
+
+App
+tsx
+MB
+Adicionar mais ações no dicionário e melhorar o front-end para opção de tela preto e branco.
+Ter opção de limpar o histórico separado por ação ou por completo e um faq explicando o funcionamento do site. Configurações e alerta de ações em tempo real para realizar a compra e venda de acordo com as técnicas de ações empregadas.
+MOSTRE O CÓDIGO COMPLETO!
+
+
+I'll help you enhance the trading dashboard with those features. Here's a complete updated version:
+
+
+Enhanced Trading Dashboard
+Click to open code
+ Copy
+Retry
+
+
+
+Claude can make mistakes. Please double-check responses.
+
+
+
+Nenhum arquivo escolhido
+
+
+3.5 Sonnet
+
+Choose style
+2
+
+Enhanced Trading Dashboard
+
 import React, { useState, useEffect } from 'react';
 import {
   LineChart,
@@ -6,9 +41,21 @@ import {
   Settings,
   Bell,
   Search,
-  ChevronDown,
+  Trash2,
+  HelpCircle,
+  AlertCircle,
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
+// Expanded stocks dictionary
 const STOCKS = {
   'Ações dos EUA': {
     'AAPL': 'Apple Inc.',
@@ -19,6 +66,16 @@ const STOCKS = {
     'TSLA': 'Tesla Inc.',
     'NVDA': 'NVIDIA Corporation',
     'JPM': 'JPMorgan Chase & Co.',
+    'PYPL': 'PayPal Holdings',
+    'INTC': 'Intel Corporation',
+    'AMD': 'Advanced Micro Devices',
+    'NFLX': 'Netflix Inc.',
+    'DIS': 'The Walt Disney Company',
+    'UBER': 'Uber Technologies Inc.',
+    'COIN': 'Coinbase Global Inc.',
+    'SHOP': 'Shopify Inc.',
+    'ZM': 'Zoom Video Communications',
+    'PLTR': 'Palantir Technologies'
   },
   'Ações Brasileiras': {
     'PETR4.SA': 'Petrobras PN',
@@ -29,6 +86,14 @@ const STOCKS = {
     'WEGE3.SA': 'WEG ON',
     'RENT3.SA': 'Localiza ON',
     'BBAS3.SA': 'Banco do Brasil ON',
+    'CIEL3.SA': 'Cielo ON',
+    'SUZB3.SA': 'Suzano ON',
+    'EMBR3.SA': 'Embraer ON',
+    'GGBR4.SA': 'Gerdau PN',
+    'MGLU3.SA': 'Magazine Luiza ON',
+    'VIVA3.SA': 'Vivara ON',
+    'TOTS3.SA': 'Totvs ON',
+    'LWSA3.SA': 'Locaweb ON'
   },
   'ETFs': {
     'SPY': 'SPDR S&P 500 ETF',
@@ -37,8 +102,34 @@ const STOCKS = {
     'EEM': 'iShares MSCI Emerging Markets ETF',
     'BOVA11.SA': 'iShares Ibovespa',
     'SMAL11.SA': 'iShares Small Cap',
+    'IVVB11.SA': 'iShares S&P 500',
+    'URTH': 'iShares MSCI World ETF',
+    'ACWI': 'iShares MSCI ACWI ETF',
+    'VTI': 'Vanguard Total Stock Market ETF'
   }
 };
+
+interface Trade {
+  symbol: string;
+  quantity: number;
+  price: number;
+  total: number;
+  type: 'buy' | 'sell';
+  date: string;
+}
+
+interface Indicators {
+  rsi: number;
+  ma20: number;
+  ma50: number;
+}
+
+interface AlertRule {
+  symbol: string;
+  condition: 'above' | 'below';
+  price: number;
+  active: boolean;
+}
 
 const calculateRSI = (prices: number[], period: number = 14): number => {
   if (prices.length < period + 1) return 50;
@@ -60,22 +151,8 @@ const calculateMA = (prices: number[], period: number): number => {
   return prices.slice(-period).reduce((sum, price) => sum + price, 0) / period;
 };
 
-interface Trade {
-  symbol: string;
-  quantity: number;
-  price: number;
-  total: number;
-  type: 'buy' | 'sell';
-  date: string;
-}
-
-interface Indicators {
-  rsi: number;
-  ma20: number;
-  ma50: number;
-}
-
 function App() {
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const [symbol, setSymbol] = useState('AAPL');
   const [stockData, setStockData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -85,6 +162,8 @@ function App() {
   const [indicators, setIndicators] = useState<Indicators | null>(null);
   const [autoTrading, setAutoTrading] = useState(false);
   const [pythonStatus, setPythonStatus] = useState('');
+  const [alerts, setAlerts] = useState<AlertRule[]>([]);
+  const [showFAQ, setShowFAQ] = useState(false);
 
   useEffect(() => {
     fetchStockData();
@@ -93,6 +172,32 @@ function App() {
       return () => clearInterval(interval);
     }
   }, [symbol, autoTrading]);
+
+  useEffect(() => {
+    // Check alerts
+    if (stockData && alerts.length > 0) {
+      const currentPrice = parseFloat(stockData['05. price']);
+      alerts.forEach(alert => {
+        if (alert.active && alert.symbol === symbol) {
+          if (
+            (alert.condition === 'above' && currentPrice >= alert.price) ||
+            (alert.condition === 'below' && currentPrice <= alert.price)
+          ) {
+            // Trigger notification
+            new Notification(`Alerta de Preço: ${symbol}`, {
+              body: `O preço atingiu ${currentPrice} (${alert.condition === 'above' ? 'acima' : 'abaixo'} de ${alert.price})`,
+            });
+            // Disable the alert after triggering
+            setAlerts(prev => 
+              prev.map(a => 
+                a === alert ? { ...a, active: false } : a
+              )
+            );
+          }
+        }
+      });
+    }
+  }, [stockData]);
 
   const calculateIndicators = (prices: number[]) => {
     const rsi = calculateRSI(prices);
@@ -114,14 +219,12 @@ function App() {
         return;
       }
 
-      // Atualiza os dados da ação
       setStockData({
         '05. price': data.stockInfo.price,
         '06. volume': data.stockInfo.volume,
         '09. change': data.stockInfo.change,
       });
 
-      // Calcula os indicadores
       calculateIndicators(data.prices);
     } catch (err) {
       setError('Erro ao buscar dados.');
@@ -175,9 +278,26 @@ function App() {
     controlPythonTrading(newState);
   };
 
+  const clearHistory = (specificSymbol?: string) => {
+    if (specificSymbol) {
+      setPortfolio(portfolio.filter(trade => trade.symbol !== specificSymbol));
+    } else {
+      setPortfolio([]);
+    }
+  };
+
+  const addAlert = (price: number, condition: 'above' | 'below') => {
+    setAlerts([...alerts, {
+      symbol,
+      condition,
+      price,
+      active: true
+    }]);
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b border-gray-200">
+    <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50'}`}>
+      <nav className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             <div className="flex items-center">
@@ -185,8 +305,48 @@ function App() {
               <span className="ml-2 text-xl font-bold">TradingDash</span>
             </div>
             <div className="flex items-center space-x-4">
-              <Bell className="h-5 w-5 text-gray-600" />
-              <Settings className="h-5 w-5 text-gray-600" />
+              <button 
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                className={`p-2 rounded-lg ${
+                  isDarkMode 
+                    ? 'hover:bg-gray-700 text-gray-300' 
+                    : 'hover:bg-gray-100 text-gray-600'
+                }`}
+              >
+                {isDarkMode ? '🌞' : '🌙'}
+              </button>
+              <Dialog>
+                <DialogTrigger>
+                  <HelpCircle className={`h-5 w-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>FAQ - Como usar o TradingDash</DialogTitle>
+                    <DialogDescription>
+                      <div className="space-y-4 mt-4">
+                        <div>
+                          <h3 className="font-bold">Como funciona o Auto Trading?</h3>
+                          <p>O sistema automaticamente executa operações baseadas em indicadores técnicos (RSI, Médias Móveis) quando ativado.</p>
+                        </div>
+                        <div>
+                          <h3 className="font-bold">Como configurar alertas?</h3>
+                          <p>Você pode definir alertas de preço para qualquer ativo. O sistema notificará quando o preço atingir o valor definido.</p>
+                        </div>
+                        <div>
+                          <h3 className="font-bold">Indicadores Técnicos:</h3>
+                          <ul className="list-disc pl-5">
+                            <li>RSI: Índice de Força Relativa (valores entre 0-100)</li>
+                            <li>MA20: Média Móvel de 20 períodos</li>
+                            <li>MA50: Média Móvel de 50 períodos</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </DialogDescription>
+                  </DialogHeader>
+                </DialogContent>
+              </Dialog>
+              <Bell className={`h-5 w-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
+              <Settings className={`h-5 w-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
             </div>
           </div>
         </div>
@@ -198,7 +358,11 @@ function App() {
             <select
               value={symbol}
               onChange={(e) => setSymbol(e.target.value)}
-              className="flex-1 p-2 border rounded-md focus:ring-2 focus:ring-indigo-500"
+              className={`flex-1 p-2 border rounded-md ${
+                isDarkMode 
+                  ? 'bg-gray-800 border-gray-700 text-white' 
+                  : 'bg-white border-gray-300'
+              }`}
             >
               {Object.entries(STOCKS).map(([category, stocks]) => (
                 <optgroup label={category} key={category}>
