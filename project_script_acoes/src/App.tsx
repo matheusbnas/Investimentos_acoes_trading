@@ -1,5 +1,7 @@
 import StockChart from './StockChart';
 import TradingFAQ from './TradingFAQ';
+import AIInsights from './AIInsights';
+import Chatbot from './Chatbot';
 import React, { useState, useEffect } from 'react';
 import {
   LineChart,
@@ -66,7 +68,7 @@ const STOCKS = {
 
 const calculateRSI = (prices: number[], period: number = 14): number => {
   if (prices.length < period + 1) return 50;
-  
+
   const deltas = prices.slice(1).map((price, i) => price - prices[i]);
   const gains = deltas.map(change => change > 0 ? change : 0);
   const losses = deltas.map(change => change < 0 ? -change : 0);
@@ -97,6 +99,7 @@ interface Indicators {
   rsi: number;
   ma20: number;
   ma50: number;
+  ma100: number;
 }
 
 function App() {
@@ -112,6 +115,9 @@ function App() {
   const [historicalData, setHistoricalData] = useState<Array<{ timestamp: number; close: number }>>([]);
   const [darkMode, setDarkMode] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showMA100, setShowMA100] = useState(true);
+  const [showVolume, setShowVolume] = useState(true);
+  const [showRSI, setShowRSI] = useState(true);
 
   useEffect(() => {
     fetchStockData();
@@ -125,8 +131,9 @@ function App() {
     const rsi = calculateRSI(prices);
     const ma20 = calculateMA(prices, 20);
     const ma50 = calculateMA(prices, 50);
-    
-    setIndicators({ rsi, ma20, ma50 });
+    const ma100 = calculateMA(prices, 100);
+
+    setIndicators({ rsi, ma20, ma50, ma100 });
   };
 
   const fetchStockData = async () => {
@@ -136,14 +143,14 @@ function App() {
         `http://localhost:5000/api/stock?symbol=${symbol}`
       );
       const data = await response.json();
-  
+
       if (data.error) {
         setError(data.error);
         return;
       }
-  
+
       setStockData(data.stockInfo);
-      
+
       if (data.prices && data.prices.length > 0) {
         calculateIndicators(data.prices);
         setHistoricalData(data.prices.map((price: number, index: number) => ({
@@ -164,29 +171,29 @@ function App() {
       const response = await fetch('http://localhost:5000/api/trading', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           active,
-          symbol 
+          symbol
         })
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Erro na requisição');
       }
-  
+
       const data = await response.json();
       setPythonStatus(active ? 'Conectado ao Python' : 'Desconectado');
-      
+
     } catch (err: any) {
       setPythonStatus(err.message || 'Erro de conexão com o backend');
     }
   };
-  
+
   const executeTrade = (type: 'buy' | 'sell') => {
     if (!stockData) return;
     const price = stockData.price;
-    
+
     setPortfolio([...portfolio, {
       symbol,
       quantity,
@@ -222,27 +229,24 @@ function App() {
             </div>
             <div className="flex items-center space-x-4 relative">
               <Bell className={`h-5 w-5 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
-              <Settings 
+              <Settings
                 className={`h-5 w-5 cursor-pointer ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}
-                onClick={() => setShowSettings(!showSettings)} 
+                onClick={() => setShowSettings(!showSettings)}
               />
-              
+
               {showSettings && (
-                <div className={`absolute top-12 right-0 w-64 p-4 rounded-lg shadow-xl z-50 ${
-                  darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
-                }`}>
+                <div className={`absolute top-12 right-0 w-64 p-4 rounded-lg shadow-xl z-50 ${darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
+                  }`}>
                   <div className="flex flex-col gap-3">
                     <div className="flex items-center justify-between">
                       <span>Tema Escuro</span>
                       <button
                         onClick={() => setDarkMode(!darkMode)}
-                        className={`w-12 h-6 rounded-full px-1 flex items-center ${
-                          darkMode ? 'bg-indigo-600' : 'bg-gray-300'
-                        }`}
+                        className={`w-12 h-6 rounded-full px-1 flex items-center ${darkMode ? 'bg-indigo-600' : 'bg-gray-300'
+                          }`}
                       >
-                        <div className={`w-4 h-4 rounded-full bg-white transform transition-transform ${
-                          darkMode ? 'translate-x-6' : 'translate-x-0'
-                        }`} />
+                        <div className={`w-4 h-4 rounded-full bg-white transform transition-transform ${darkMode ? 'translate-x-6' : 'translate-x-0'
+                          }`} />
                       </button>
                     </div>
                     <button
@@ -265,11 +269,10 @@ function App() {
             <select
               value={symbol}
               onChange={(e) => setSymbol(e.target.value)}
-              className={`flex-1 p-2 rounded-md focus:ring-2 ${
-                darkMode 
-                  ? 'bg-gray-800 border-gray-700 text-white focus:ring-indigo-400' 
+              className={`flex-1 p-2 rounded-md focus:ring-2 ${darkMode
+                  ? 'bg-gray-800 border-gray-700 text-white focus:ring-indigo-400'
                   : 'border-gray-300 focus:ring-indigo-500'
-              }`}
+                }`}
             >
               {Object.entries(STOCKS).map(([category, stocks]) => (
                 <optgroup label={category} key={category}>
@@ -283,11 +286,10 @@ function App() {
             </select>
             <button
               onClick={fetchStockData}
-              className={`px-4 py-2 rounded-md flex items-center ${
-                darkMode 
-                  ? 'bg-indigo-600 hover:bg-indigo-700 text-white' 
+              className={`px-4 py-2 rounded-md flex items-center ${darkMode
+                  ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
                   : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-              }`}
+                }`}
             >
               <Search className="h-5 w-5 mr-2" />
               Buscar
@@ -295,13 +297,12 @@ function App() {
             <div className="flex flex-col">
               <button
                 onClick={toggleAutoTrading}
-                className={`px-4 py-2 rounded-md hover:opacity-90 ${
-                  autoTrading 
-                    ? 'bg-green-600 text-white' 
-                    : darkMode 
-                      ? 'bg-gray-700 text-white' 
+                className={`px-4 py-2 rounded-md hover:opacity-90 ${autoTrading
+                    ? 'bg-green-600 text-white'
+                    : darkMode
+                      ? 'bg-gray-700 text-white'
                       : 'bg-gray-600 text-white'
-                }`}
+                  }`}
               >
                 {autoTrading ? 'Auto ON' : 'Auto OFF'}
               </button>
@@ -313,33 +314,28 @@ function App() {
           {error && <p className="text-red-600">{error}</p>}
 
           {stockData && (
-            <div className={`rounded-lg shadow p-6 transition-colors duration-300 ${
-              darkMode ? 'bg-gray-800' : 'bg-white'
-            }`}>
+            <div className={`rounded-lg shadow p-6 transition-colors duration-300 ${darkMode ? 'bg-gray-800' : 'bg-white'
+              }`}>
               <h2 className="text-xl font-semibold mb-4">Dados: {symbol}</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              <div className={`p-4 rounded-lg ${
-                darkMode ? 'bg-gray-800 text-gray-200' : 'bg-gray-50 text-gray-800'
-                }`}>
+                <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-50 text-gray-800'
+                  }`}>
                   <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>Preço</p>
                   <p className="text-2xl font-bold">${stockData.price.toFixed(2)}</p>
-              </div>
-                <div className={`p-4 rounded-lg ${
-                  darkMode ? 'bg-gray-700' : 'bg-gray-50'
-                }`}>
-                  <p className="text-sm text-gray-500">Variação</p>
-                  <p className={`text-2xl font-bold ${
-                    stockData.change >= 0 
-                      ? 'text-green-600' 
-                      : 'text-red-600'
+                </div>
+                <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-50 text-gray-800'
                   }`}>
+                  <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>Variação</p>
+                  <p className={`text-2xl font-bold ${stockData.change >= 0
+                      ? 'text-green-600'
+                      : 'text-red-600'
+                    }`}>
                     {stockData.change.toFixed(2)}
                   </p>
                 </div>
-                <div className={`p-4 rounded-lg ${
-                  darkMode ? 'bg-gray-700' : 'bg-gray-50'
-                }`}>
-                  <p className="text-sm text-gray-500">Volume</p>
+                <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-50 text-gray-800'
+                  }`}>
+                  <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>Volume</p>
                   <p className="text-2xl font-bold">
                     {stockData.volume.toLocaleString()}
                   </p>
@@ -348,49 +344,45 @@ function App() {
 
               {indicators && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  <div className={`p-4 rounded-lg ${
-                    darkMode ? 'bg-gray-700' : 'bg-gray-50'
-                  }`}>
-                    <p className="text-sm text-gray-500">RSI (14)</p>
+                  <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-50 text-gray-800'
+                    }`}>
+                    <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>RSI (14)</p>
                     <p className="text-xl font-bold">{indicators.rsi.toFixed(2)}</p>
                   </div>
-                  <div className={`p-4 rounded-lg ${
-                    darkMode ? 'bg-gray-700' : 'bg-gray-50'
-                  }`}>
-                    <p className="text-sm text-gray-500">MA20</p>
+                  <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-50 text-gray-800'
+                    }`}>
+                    <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>MA20</p>
                     <p className="text-xl font-bold">${indicators.ma20.toFixed(2)}</p>
                   </div>
-                  <div className={`p-4 rounded-lg ${
-                    darkMode ? 'bg-gray-700' : 'bg-gray-50'
-                  }`}>
-                    <p className="text-sm text-gray-500">Sinal</p>
-                    <p className={`text-xl font-bold ${
-                      indicators.ma20 > indicators.ma50 && indicators.rsi < 70 
-                        ? 'text-green-600' 
-                        : indicators.ma20 < indicators.ma50 && indicators.rsi > 30 
-                        ? 'text-red-600' 
-                        : 'text-gray-600'
+                  <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-50 text-gray-800'
                     }`}>
-                      {indicators.ma20 > indicators.ma50 && indicators.rsi < 70 
-                        ? 'COMPRA' 
-                        : indicators.ma20 < indicators.ma50 && indicators.rsi > 30 
-                        ? 'VENDA' 
-                        : 'NEUTRO'}
+                    <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>Sinal</p>
+                    <p className={`text-xl font-bold ${indicators.ma20 > indicators.ma50 && indicators.rsi < 70
+                        ? 'text-green-600'
+                        : indicators.ma20 < indicators.ma50 && indicators.rsi > 30
+                          ? 'text-red-600'
+                          : 'text-gray-600'
+                      }`}>
+                      {indicators.ma20 > indicators.ma50 && indicators.rsi < 70
+                        ? 'COMPRA'
+                        : indicators.ma20 < indicators.ma50 && indicators.rsi > 30
+                          ? 'VENDA'
+                          : 'NEUTRO'}
                     </p>
                   </div>
                 </div>
               )}
 
               {historicalData.length > 0 && (
-                <div className={`rounded-lg shadow p-6 mt-4 ${
-                  darkMode ? 'bg-gray-700' : 'bg-white'
-                }`}>
+                <div className={`rounded-lg shadow p-6 mt-4 ${darkMode ? 'bg-gray-700' : 'bg-white'
+                  }`}>
                   <h2 className="text-xl font-semibold mb-4">Gráfico de 15 Minutos (5 dias)</h2>
-                  <StockChart 
+                  <StockChart
                     data={historicalData}
-                    indicators={indicators || { ma20: 0, ma50: 0, rsi: 50 }}
+                    indicators={indicators || { ma20: 0, ma50: 0, ma100: 0, rsi: 50 }}
                     showMA20={true}
                     showMA50={true}
+                    showMA100={showMA100}
                     showRSI={true}
                     darkMode={darkMode}
                   />
@@ -403,11 +395,10 @@ function App() {
                   min="1"
                   value={quantity}
                   onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                  className={`w-32 p-2 border rounded-md ${
-                    darkMode 
-                      ? 'bg-gray-800 border-gray-700 text-white' 
+                  className={`w-32 p-2 border rounded-md ${darkMode
+                      ? 'bg-gray-800 border-gray-700 text-white'
                       : 'border-gray-300'
-                  }`}
+                    }`}
                   placeholder="Quantidade"
                 />
                 <button
@@ -429,25 +420,21 @@ function App() {
           )}
         </div>
 
-        <div className={`rounded-lg shadow transition-colors duration-300 ${
-          darkMode ? 'bg-gray-800' : 'bg-white'
-        }`}>
-          <div className={`p-4 border-b ${
-            darkMode ? 'border-gray-700' : 'border-gray-200'
+        <div className={`rounded-lg shadow transition-colors duration-300 ${darkMode ? 'bg-gray-800' : 'bg-white'
           }`}>
+          <div className={`p-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'
+            }`}>
             <h2 className="text-lg font-semibold">Histórico</h2>
           </div>
           <div className="divide-y">
             {portfolio.map((trade, index) => (
-              <div key={index} className={`p-4 flex justify-between items-center ${
-                darkMode ? 'divide-gray-700' : 'divide-gray-200'
-              }`}>
+              <div key={index} className={`p-4 flex justify-between items-center ${darkMode ? 'divide-gray-700' : 'divide-gray-200'
+                }`}>
                 <div className="flex items-center gap-4">
-                  <div className={`p-2 rounded-full ${
-                    trade.type === 'buy' 
-                      ? 'bg-green-100 text-green-600' 
+                  <div className={`p-2 rounded-full ${trade.type === 'buy'
+                      ? 'bg-green-100 text-green-600'
                       : 'bg-red-100 text-red-600'
-                  }`}>
+                    }`}>
                     {trade.type === 'buy' ? (
                       <ArrowUpRight className="h-5 w-5" />
                     ) : (
@@ -468,11 +455,10 @@ function App() {
                       ${trade.price.toFixed(2)}
                     </p>
                   </div>
-                  <button 
+                  <button
                     onClick={() => clearHistory(index)}
-                    className={`p-1 hover:opacity-70 ${
-                      darkMode ? 'text-gray-400' : 'text-gray-600'
-                    }`}
+                    className={`p-1 hover:opacity-70 ${darkMode ? 'text-gray-400' : 'text-gray-600'
+                      }`}
                   >
                     <X className="h-5 w-5" />
                   </button>
@@ -480,16 +466,24 @@ function App() {
               </div>
             ))}
             {portfolio.length === 0 && (
-              <div className={`p-4 text-center ${
-                darkMode ? 'text-gray-400' : 'text-gray-500'
-              }`}>
+              <div className={`p-4 text-center ${darkMode ? 'text-gray-400' : 'text-gray-500'
+                }`}>
                 Nenhuma operação realizada
               </div>
             )}
           </div>
         </div>
 
+        <Chatbot
+          indicators={indicators}
+          darkMode={darkMode}
+        />
+
         <TradingFAQ darkMode={darkMode} />
+        <AIInsights
+          indicators={indicators || { ma20: 0, ma50: 0, ma100: 0, rsi: 50 }}
+          darkMode={darkMode}
+        />
       </main>
     </div>
   );
